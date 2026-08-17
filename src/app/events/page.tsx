@@ -14,19 +14,28 @@ interface EventsPageProps {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let events: any[] = [];
+
   const { category, city } = await searchParams;
 
   const whereClause: any = {};
   if (category && category !== 'All') whereClause.category = category;
   if (city && city !== 'All') whereClause.city = city;
 
-  const events = await db.event.findMany({
-    where: whereClause,
-    orderBy: { startDate: 'asc' },
-    include: { creator: { include: { profile: true } } },
-  });
+  try {
+    user = await getSessionUser();
+    events = await db.event.findMany({
+      where: whereClause,
+      orderBy: { startDate: 'asc' },
+      include: { creator: { include: { profile: true } } },
+    });
+  } catch (err) {
+    console.error('Error fetching events:', err);
+  }
 
   const categories = ['All', 'Entertainment', 'Professional', 'Lifestyle', 'Health', 'Culture', 'Creativity'];
   const cities = ['All', 'San Francisco', 'New York', 'Seattle', 'Austin', 'Chicago', 'Los Angeles', 'Denver', 'London', 'Dubai'];

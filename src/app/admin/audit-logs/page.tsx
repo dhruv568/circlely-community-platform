@@ -2,10 +2,17 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { ShieldCheck, FileText } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminAuditLogsPage() {
-  const submissions = await db.contactSubmission.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  let submissions: any[] = [];
+  try {
+    submissions = await db.contactSubmission.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (err) {
+    console.error('Error fetching contact submissions for audit logs:', err);
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] flex flex-col">

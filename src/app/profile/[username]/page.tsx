@@ -11,28 +11,37 @@ interface ProfilePageProps {
   params: Promise<{ username: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const currentUser = await getSessionUser();
+  let currentUser = null;
+  let profile: any = null;
+
   const { username } = await params;
 
-  let targetUsername = username;
-  if (username === 'me' && currentUser) {
-    targetUsername = currentUser.username;
-  }
+  try {
+    currentUser = await getSessionUser();
+    let targetUsername = username;
+    if (username === 'me' && currentUser) {
+      targetUsername = currentUser.username;
+    }
 
-  const profile = await db.profile.findUnique({
-    where: { username: targetUsername },
-    include: {
-      user: {
-        include: {
-          userInterests: { include: { interest: true } },
-          communityMemberships: { include: { community: true } },
-          createdActivities: true,
-          createdEvents: true,
+    profile = await db.profile.findUnique({
+      where: { username: targetUsername },
+      include: {
+        user: {
+          include: {
+            userInterests: { include: { interest: true } },
+            communityMemberships: { include: { community: true } },
+            createdActivities: true,
+            createdEvents: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error('Error fetching profile data:', err);
+  }
 
   if (!profile) notFound();
 
@@ -122,7 +131,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <Sparkles className="w-5 h-5 text-purple-600" /> Interests & Passions
           </h2>
           <div className="flex flex-wrap gap-2">
-            {profile.user.userInterests.map((ui) => (
+            {profile.user.userInterests.map((ui: any) => (
               <span
                 key={ui.id}
                 className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-purple-50 text-purple-700 border border-purple-100"
@@ -139,7 +148,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <Users className="w-5 h-5 text-purple-600" /> Circles Joined ({profile.user.communityMemberships.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {profile.user.communityMemberships.map((cm) => (
+            {profile.user.communityMemberships.map((cm: any) => (
               <Link
                 key={cm.id}
                 href={`/communities/${cm.community.slug}`}

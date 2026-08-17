@@ -15,17 +15,18 @@ interface DiscoverPageProps {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let people: any[] = [];
+
   const { city, ageGroup, search } = await searchParams;
 
   const whereClause: any = {
     profile: { isPublic: true },
   };
 
-  if (user) {
-    whereClause.id = { not: user.id };
-  }
   if (city && city !== 'All') whereClause.profile.city = city;
   if (ageGroup && ageGroup !== 'All') whereClause.profile.ageGroup = ageGroup;
   if (search) {
@@ -35,14 +36,22 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
     ];
   }
 
-  const people = await db.user.findMany({
-    where: whereClause,
-    take: 24,
-    include: {
-      profile: true,
-      userInterests: { include: { interest: true } },
-    },
-  });
+  try {
+    user = await getSessionUser();
+    if (user) {
+      whereClause.id = { not: user.id };
+    }
+    people = await db.user.findMany({
+      where: whereClause,
+      take: 24,
+      include: {
+        profile: true,
+        userInterests: { include: { interest: true } },
+      },
+    });
+  } catch (err) {
+    console.error('Error fetching discover people:', err);
+  }
 
   const cities = ['All', 'San Francisco', 'New York', 'Seattle', 'Austin', 'Chicago', 'Los Angeles', 'Denver', 'London', 'Dubai'];
   const ageGroups = ['All', '18-24', '25-34', '35-49', '50-64', '65+'];
@@ -122,7 +131,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 
                   {/* Interest Badges */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {p.userInterests.map((ui) => (
+                    {p.userInterests.map((ui: any) => (
                       <span
                         key={ui.id}
                         className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-purple-50 text-purple-700 border border-purple-100"

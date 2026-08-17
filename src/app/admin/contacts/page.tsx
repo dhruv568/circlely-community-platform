@@ -3,10 +3,17 @@ import { db } from '@/lib/db';
 import { Mail, CheckCircle2 } from 'lucide-react';
 import { timeAgo } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminContactsPage() {
-  const submissions = await db.contactSubmission.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  let submissions: any[] = [];
+  try {
+    submissions = await db.contactSubmission.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (err) {
+    console.error('Error fetching contact submissions:', err);
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] flex flex-col">

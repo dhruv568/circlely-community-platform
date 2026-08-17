@@ -2,11 +2,18 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { Users, Sparkles, ShieldCheck } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminCommunitiesPage() {
-  const communities = await db.community.findMany({
-    orderBy: { memberCount: 'desc' },
-    include: { creator: true },
-  });
+  let communities: any[] = [];
+  try {
+    communities = await db.community.findMany({
+      orderBy: { memberCount: 'desc' },
+      include: { creator: true },
+    });
+  } catch (err) {
+    console.error('Error fetching admin communities:', err);
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] flex flex-col">

@@ -22,10 +22,18 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-export default async function HomePage() {
-  const user = await getSessionUser();
+export const dynamic = 'force-dynamic';
 
-  const featuredCommunities = await db.community.findMany({ take: 6, orderBy: { memberCount: 'desc' } });
+export default async function HomePage() {
+  let user = null;
+  let featuredCommunities: any[] = [];
+
+  try {
+    user = await getSessionUser();
+    featuredCommunities = await db.community.findMany({ take: 6, orderBy: { memberCount: 'desc' } });
+  } catch (err) {
+    console.error('Error loading homepage data:', err);
+  }
 
   const ageGroups = [
     { range: '18–24', title: 'Young Adults', desc: 'College, early career, gaming & vibrant social circles.', icon: '🎓' },

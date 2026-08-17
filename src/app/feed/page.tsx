@@ -7,33 +7,44 @@ import { PostCard } from '@/components/feed/PostCard';
 import { Sparkles, Users, Calendar, Plus, Compass } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function FeedPage() {
-  const user = await getSessionUser();
+  let user = null;
+  let posts: any[] = [];
+  let joinedCommunities: any[] = [];
+  let upcomingActivities: any[] = [];
 
-  const posts = await db.post.findMany({
-    take: 25,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      author: { include: { profile: true } },
-      community: true,
-      comments: {
-        take: 3,
-        orderBy: { createdAt: 'desc' },
-        include: { author: { include: { profile: true } } },
+  try {
+    user = await getSessionUser();
+
+    posts = await db.post.findMany({
+      take: 25,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: { include: { profile: true } },
+        community: true,
+        comments: {
+          take: 3,
+          orderBy: { createdAt: 'desc' },
+          include: { author: { include: { profile: true } } },
+        },
+        polls: true,
       },
-      polls: true,
-    },
-  });
+    });
 
-  const joinedCommunities = await db.community.findMany({
-    take: 6,
-    orderBy: { memberCount: 'desc' },
-  });
+    joinedCommunities = await db.community.findMany({
+      take: 6,
+      orderBy: { memberCount: 'desc' },
+    });
 
-  const upcomingActivities = await db.activity.findMany({
-    take: 4,
-    orderBy: { activityDate: 'asc' },
-  });
+    upcomingActivities = await db.activity.findMany({
+      take: 4,
+      orderBy: { activityDate: 'asc' },
+    });
+  } catch (err) {
+    console.error('Error fetching feed data:', err);
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] flex flex-col">

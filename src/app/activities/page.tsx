@@ -13,8 +13,12 @@ interface ActivitiesPageProps {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function ActivitiesPage({ searchParams }: ActivitiesPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let activities: any[] = [];
+
   const { category, type } = await searchParams;
 
   const whereClause: any = {};
@@ -22,14 +26,19 @@ export default async function ActivitiesPage({ searchParams }: ActivitiesPagePro
   if (type === 'online') whereClause.isOnline = true;
   if (type === 'offline') whereClause.isOnline = false;
 
-  const activities = await db.activity.findMany({
-    where: whereClause,
-    orderBy: { activityDate: 'asc' },
-    include: {
-      community: { select: { name: true, slug: true } },
-      creator: { include: { profile: true } },
-    },
-  });
+  try {
+    user = await getSessionUser();
+    activities = await db.activity.findMany({
+      where: whereClause,
+      orderBy: { activityDate: 'asc' },
+      include: {
+        community: { select: { name: true, slug: true } },
+        creator: { include: { profile: true } },
+      },
+    });
+  } catch (err) {
+    console.error('Error fetching activities:', err);
+  }
 
   const categories = ['All', 'Games', 'Discussions', 'Fitness', 'Workshops', 'Creative', 'Travel', 'Networking'];
 

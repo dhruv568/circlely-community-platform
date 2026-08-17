@@ -12,36 +12,45 @@ interface EventDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let event: any = null;
+  let isRSVPed = false;
+
   const { id } = await params;
 
-  const event = await db.event.findUnique({
-    where: { id },
-    include: {
-      creator: { include: { profile: true } },
-      community: true,
-      attendees: {
-        take: 12,
-        include: { user: { include: { profile: true } } },
-      },
-    },
-  });
-
-  if (!event) notFound();
-
-  let isRSVPed = false;
-  if (user) {
-    const attendee = await db.eventAttendee.findUnique({
-      where: {
-        eventId_userId: {
-          eventId: event.id,
-          userId: user.id,
+  try {
+    user = await getSessionUser();
+    event = await db.event.findUnique({
+      where: { id },
+      include: {
+        creator: { include: { profile: true } },
+        community: true,
+        attendees: {
+          take: 12,
+          include: { user: { include: { profile: true } } },
         },
       },
     });
-    isRSVPed = !!attendee;
+
+    if (event && user) {
+      const attendee = await db.eventAttendee.findUnique({
+        where: {
+          eventId_userId: {
+            eventId: event.id,
+            userId: user.id,
+          },
+        },
+      });
+      isRSVPed = !!attendee;
+    }
+  } catch (err) {
+    console.error('Error fetching event detail:', err);
   }
+
+  if (!event) notFound();
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] flex flex-col">
@@ -112,7 +121,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-4">
               <h2 className="font-bold text-xl text-gray-900">Attendees ({event.attendeesCount})</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {event.attendees.map((att) => (
+                {event.attendees.map((att: any) => (
                   <div key={att.id} className="flex items-center gap-2 p-2 rounded-2xl bg-gray-50 text-xs">
                     <img
                       src={att.user.profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'}

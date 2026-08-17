@@ -12,51 +12,60 @@ interface CommunityDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function CommunityDetailPage({ params }: CommunityDetailPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let community: any = null;
+  let isJoined = false;
+
   const { slug } = await params;
 
-  const community = await db.community.findUnique({
-    where: { slug },
-    include: {
-      creator: { include: { profile: true } },
-      members: {
-        take: 12,
-        include: { user: { include: { profile: true } } },
-      },
-      posts: {
-        take: 20,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          author: { include: { profile: true } },
-          comments: {
-            take: 3,
-            orderBy: { createdAt: 'desc' },
-            include: { author: { include: { profile: true } } },
+  try {
+    user = await getSessionUser();
+    community = await db.community.findUnique({
+      where: { slug },
+      include: {
+        creator: { include: { profile: true } },
+        members: {
+          take: 12,
+          include: { user: { include: { profile: true } } },
+        },
+        posts: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            author: { include: { profile: true } },
+            comments: {
+              take: 3,
+              orderBy: { createdAt: 'desc' },
+              include: { author: { include: { profile: true } } },
+            },
+            polls: true,
+            community: true,
           },
-          polls: true,
-          community: true,
         },
-      },
-      activities: { take: 4, orderBy: { activityDate: 'asc' } },
-      events: { take: 4, orderBy: { startDate: 'asc' } },
-    },
-  });
-
-  if (!community) notFound();
-
-  let isJoined = false;
-  if (user) {
-    const member = await db.communityMember.findUnique({
-      where: {
-        communityId_userId: {
-          communityId: community.id,
-          userId: user.id,
-        },
+        activities: { take: 4, orderBy: { activityDate: 'asc' } },
+        events: { take: 4, orderBy: { startDate: 'asc' } },
       },
     });
-    isJoined = !!member;
+
+    if (community && user) {
+      const member = await db.communityMember.findUnique({
+        where: {
+          communityId_userId: {
+            communityId: community.id,
+            userId: user.id,
+          },
+        },
+      });
+      isJoined = !!member;
+    }
+  } catch (err) {
+    console.error('Error loading community detail:', err);
   }
+
+  if (!community) notFound();
 
   const rulesList: string[] = community.rules ? JSON.parse(community.rules) : [];
 
@@ -123,7 +132,7 @@ export default async function CommunityDetailPage({ params }: CommunityDetailPag
                   No posts yet in this circle. Be the first to start a conversation!
                 </div>
               ) : (
-                community.posts.map((post) => (
+                community.posts.map((post: any) => (
                   <PostCard key={post.id} post={post} currentUserId={user?.id} />
                 ))
               )}
@@ -159,7 +168,7 @@ export default async function CommunityDetailPage({ params }: CommunityDetailPag
                 <Users className="w-4 h-4 text-gray-400" />
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {community.members.map((m) => (
+                {community.members.map((m: any) => (
                   <Link
                     key={m.id}
                     href={`/profile/${m.user.profile?.username || 'user'}`}

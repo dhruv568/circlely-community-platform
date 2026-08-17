@@ -14,8 +14,12 @@ interface CommunitiesPageProps {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function CommunitiesPage({ searchParams }: CommunitiesPageProps) {
-  const user = await getSessionUser();
+  let user = null;
+  let communities: any[] = [];
+
   const { category, ageGroup, search } = await searchParams;
 
   const whereClause: any = {};
@@ -28,10 +32,15 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
     ];
   }
 
-  const communities = await db.community.findMany({
-    where: whereClause,
-    orderBy: { memberCount: 'desc' },
-  });
+  try {
+    user = await getSessionUser();
+    communities = await db.community.findMany({
+      where: whereClause,
+      orderBy: { memberCount: 'desc' },
+    });
+  } catch (err) {
+    console.error('Error fetching communities:', err);
+  }
 
   const categories = ['All', 'Entertainment', 'Lifestyle', 'Creativity', 'Health', 'Professional', 'Culture', 'Wellness'];
   const ageGroups = ['All', '18-24', '25-34', '35-49', '50-64', '65+'];
